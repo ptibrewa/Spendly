@@ -4,62 +4,94 @@
 
 {% block content %}
 
-<section class="hero">
-    <div class="hero-inner">
-        <div class="hero-badge">Personal Finance Tracker</div>
-        <h1 class="hero-title">
-            Know where your<br>
-            <em>money goes</em>
-        </h1>
-        <p class="hero-subtitle">
-            Log expenses, understand your spending patterns,
-            and take control of your financial life —
-            one transaction at a time.
-        </p>
-        <div class="hero-actions">
-            <a href="{{ url_for('register') }}" class="btn-primary">Start tracking free</a>
-            <a href="{{ url_for('login') }}" class="btn-ghost">Sign in</a>
+<section class="hero-v2">
+    <div class="hero-v2-inner">
+        <div class="hero-pill">
+            <span class="hero-pill-dot"></span>
+            Free to use · No credit card needed
         </div>
-    </div>
-    <div class="hero-visual">
-        <div class="mock-card">
-            <div class="mock-card-header">
-                <span class="mock-label">March 2026</span>
-                <span class="mock-total">₹12,450</span>
+
+        <h1 class="hero-v2-title">
+            <span class="hero-v2-line-1">Track every rupee.</span>
+            <span class="hero-v2-line-2">Know where it goes.</span>
+        </h1>
+
+        <p class="hero-v2-subtitle">
+            Spendly helps you log expenses, spot patterns, and stay on budget —
+            without the spreadsheet headache.
+        </p>
+
+        <div class="hero-v2-actions">
+            <a href="{{ url_for('register') }}" class="btn-solid">Create free account</a>
+            <button type="button" class="btn-outline" data-open-video>See how it works</button>
+        </div>
+
+        <div class="preview-card">
+            <div class="preview-dots">
+                <span class="preview-dot preview-dot-r"></span>
+                <span class="preview-dot preview-dot-y"></span>
+                <span class="preview-dot preview-dot-g"></span>
             </div>
-            <div class="mock-bars">
-                <div class="mock-bar-row">
-                    <span class="mock-cat">Bills</span>
-                    <div class="mock-bar-track">
-                        <div class="mock-bar" style="width: 72%"></div>
-                    </div>
-                    <span class="mock-amt">₹4,500</span>
+
+            <div class="preview-stats">
+                <div class="stat-card">
+                    <span class="stat-label">This month</span>
+                    <span class="stat-value">₹18,240</span>
+                    <span class="stat-delta stat-delta-neg">+12% vs last</span>
                 </div>
-                <div class="mock-bar-row">
-                    <span class="mock-cat">Food</span>
-                    <div class="mock-bar-track">
-                        <div class="mock-bar mock-bar-2" style="width: 52%"></div>
-                    </div>
-                    <span class="mock-amt">₹3,200</span>
+                <div class="stat-card">
+                    <span class="stat-label">Budget left</span>
+                    <span class="stat-value">₹6,760</span>
+                    <span class="stat-delta stat-delta-pos">43% remaining</span>
                 </div>
-                <div class="mock-bar-row">
-                    <span class="mock-cat">Health</span>
-                    <div class="mock-bar-track">
-                        <div class="mock-bar mock-bar-3" style="width: 33%"></div>
-                    </div>
-                    <span class="mock-amt">₹2,050</span>
+                <div class="stat-card">
+                    <span class="stat-label">Transactions</span>
+                    <span class="stat-value">34</span>
+                    <span class="stat-delta stat-delta-muted">this month</span>
                 </div>
-                <div class="mock-bar-row">
-                    <span class="mock-cat">Transport</span>
-                    <div class="mock-bar-track">
-                        <div class="mock-bar mock-bar-4" style="width: 28%"></div>
+            </div>
+
+            <div class="preview-bars-card">
+                <div class="preview-bar-row">
+                    <span class="preview-bar-label">Food</span>
+                    <div class="preview-bar-track">
+                        <div class="preview-bar preview-bar-food" style="width: 65%"></div>
                     </div>
-                    <span class="mock-amt">₹1,800</span>
+                </div>
+                <div class="preview-bar-row">
+                    <span class="preview-bar-label">Travel</span>
+                    <div class="preview-bar-track">
+                        <div class="preview-bar preview-bar-travel" style="width: 50%"></div>
+                    </div>
+                </div>
+                <div class="preview-bar-row">
+                    <span class="preview-bar-label">Bills</span>
+                    <div class="preview-bar-track">
+                        <div class="preview-bar preview-bar-bills" style="width: 40%"></div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </section>
+
+{# Video modal: dQw4w9WgXcQ is a placeholder (Rick Astley) — swap for the real demo video before launch. #}
+<div class="video-modal" id="videoModal" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Product demo video">
+    <div class="video-modal-backdrop" data-close-video></div>
+    <div class="video-modal-card">
+        <button type="button" class="video-modal-close" data-close-video aria-label="Close video">&times;</button>
+        <div class="video-modal-frame">
+            <iframe
+                id="videoModalIframe"
+                src=""
+                data-src="https://www.youtube.com/embed/dQw4w9WgXcQ"
+                title="Spendly product demo"
+                frameborder="0"
+                allow="autoplay; encrypted-media"
+                allowfullscreen></iframe>
+        </div>
+    </div>
+</div>
 
 <section class="features">
     <div class="features-inner">
