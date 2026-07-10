@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Profile — Spendly{% endblock %}
+
+{% block content %}
+<section class="profile-page">
+    <div class="profile-container">
+        <header class="profile-header">
+            <h1 class="profile-title">Your profile</h1>
+            <p class="profile-subtitle">Your Spendly account at a glance.</p>
+        </header>
+
+        <article class="profile-card">
+            <div class="profile-avatar" aria-hidden="true">{{ user.name[0]|upper }}</div>
+            <dl class="profile-details">
+                <div class="profile-detail">
+                    <dt>Name</dt>
+                    <dd>{{ user.name }}</dd>
+                </div>
+                <div class="profile-detail">
+                    <dt>Email</dt>
+                    <dd>{{ user.email }}</dd>
+                </div>
+                <div class="profile-detail">
+                    <dt>Member since</dt>
+                    <dd>{{ user.created_at | humandate }}</dd>
+                </div>
+            </dl>
+        </article>
+
+        <section class="profile-stats" aria-label="Spending snapshot">
+            <div class="stat-tile">
+                <span class="stat-label">Total spent</span>
+                <span class="stat-value">₹{{ '%.2f'|format(stats.total_spent) }}</span>
+            </div>
+            <div class="stat-tile">
+                <span class="stat-label">Expenses tracked</span>
+                <span class="stat-value">{{ stats.expense_count }}</span>
+            </div>
+            <div class="stat-tile">
+                <span class="stat-label">Top category</span>
+                <span class="stat-value">{{ stats.top_category or '—' }}</span>
+            </div>
+        </section>
+
+        <section class="profile-recent" aria-label="Recent activity">
+            <h2 class="recent-heading">Recent activity</h2>
+            {% if recent %}
+                <ul class="recent-list">
+                    {% for row in recent %}
+                        <li class="recent-row">
+                            <span class="recent-chip">{{ row.category }}</span>
+                            <span class="recent-desc">{{ row.description or row.category }}</span>
+                            <span class="recent-date">{{ row.date | humandate }}</span>
+                            <span class="recent-amount">₹{{ '%.2f'|format(row.amount) }}</span>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="recent-empty">No expenses yet.</p>
+            {% endif %}
+        </section>
+
+        <div class="profile-actions">
+            <a class="btn-primary" href="{{ url_for('logout') }}">Sign out</a>
+        </div>
+    </div>
+</section>
+{% endblock %}
