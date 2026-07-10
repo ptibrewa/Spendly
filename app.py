@@ -5,7 +5,7 @@ import sqlite3
 from flask import Flask, flash, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from database.db import get_db, init_db, seed_db
+from database.db import get_db, init_db, seed_db, seed_user_expenses
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SPENDLY_SECRET_KEY", "dev-only-change-me")
@@ -13,6 +13,17 @@ app.secret_key = os.environ.get("SPENDLY_SECRET_KEY", "dev-only-change-me")
 with app.app_context():
     init_db()
     seed_db()
+
+
+@app.template_filter("humandate")
+def humandate(value):
+    from datetime import datetime
+    for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d"):
+        try:
+            return datetime.strptime(value, fmt).strftime("%B %-d, %Y")
+        except ValueError:
+            continue
+    return value
 
 
 # ------------------------------------------------------------------ #
@@ -122,7 +133,57 @@ def logout():
 
 @app.route("/profile")
 def profile():
-    return "Profile page — coming in Step 4"
+    if not session.get("user_id"):
+        flash("Please sign in to view your profile.", "error")
+        return redirect(url_for("login"))
+
+    db = get_db()
+    user = db.execute(
+        "SELECT id, name, email, created_at FROM users WHERE id = ?",
+        (session["user_id"],),
+    ).fetchone()
+
+    if user is None:
+        session.clear()
+        flash("Your session has ended. Please sign in again.", "error")
+        return redirect(url_for("login"))
+
+    (expense_count,) = db.execute(
+        "SELECT COUNT(*) FROM expenses WHERE user_id = ?",
+        (user["id"],),
+    ).fetchone()
+
+    if expense_count == 0:
+        seed_user_expenses(user["id"])
+        (expense_count,) = db.execute(
+            "SELECT COUNT(*) FROM expenses WHERE user_id = ?",
+            (user["id"],),
+        ).fetchone()
+
+    (total_spent,) = db.execute(
+        "SELECT COALESCE(SUM(amount), 0) FROM expenses WHERE user_id = ?",
+        (user["id"],),
+    ).fetchone()
+
+    top_row = db.execute(
+        "SELECT category FROM expenses WHERE user_id = ? "
+        "GROUP BY category ORDER BY SUM(amount) DESC LIMIT 1",
+        (user["id"],),
+    ).fetchone()
+    top_category = top_row["category"] if top_row else None
+
+    recent = db.execute(
+        "SELECT amount, category, date, description FROM expenses "
+        "WHERE user_id = ? ORDER BY date DESC, id DESC LIMIT 5",
+        (user["id"],),
+    ).fetchall()
+
+    stats = {
+        "total_spent": total_spent,
+        "expense_count": expense_count,
+        "top_category": top_category,
+    }
+    return render_template("profile.html", user=user, stats=stats, recent=recent)
 
 
 @app.route("/expenses/add")

@@ -82,3 +82,31 @@ def seed_db():
         sample_expenses,
     )
     db.commit()
+
+
+def seed_user_expenses(user_id):
+    db = get_db()
+
+    today = date.today()
+    first = today.replace(day=1)
+
+    def d(offset):
+        return (first + timedelta(days=offset)).isoformat()
+
+    sample_expenses = [
+        (user_id,  450.00, "Food",          d(1),  "Groceries for the week"),
+        (user_id,  120.00, "Transport",     d(3),  "Metro card recharge"),
+        (user_id, 1800.00, "Bills",         d(5),  "Electricity bill"),
+        (user_id,  800.00, "Health",        d(8),  "Pharmacy — monthly meds"),
+        (user_id,  350.00, "Entertainment", d(12), "Movie night"),
+        (user_id, 2200.00, "Shopping",      d(15), "New running shoes"),
+        (user_id,   90.00, "Other",         d(18), "Notebook and pens"),
+        (user_id,  260.00, "Food",          d(22), "Dinner with friends"),
+    ]
+
+    db.executemany(
+        "INSERT INTO expenses (user_id, amount, category, date, description) "
+        "VALUES (?, ?, ?, ?, ?)",
+        sample_expenses,
+    )
+    db.commit()
