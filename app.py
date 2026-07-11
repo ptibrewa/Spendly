@@ -160,17 +160,18 @@ def profile():
             (user["id"],),
         ).fetchone()
 
-    (total_spent,) = db.execute(
-        "SELECT COALESCE(SUM(amount), 0) FROM expenses WHERE user_id = ?",
+    row = db.execute(
+        "SELECT COALESCE(SUM(amount), 0) AS total FROM expenses WHERE user_id = ?",
         (user["id"],),
     ).fetchone()
+    total_spent = float(row["total"])
 
-    top_row = db.execute(
+    row = db.execute(
         "SELECT category FROM expenses WHERE user_id = ? "
         "GROUP BY category ORDER BY SUM(amount) DESC LIMIT 1",
         (user["id"],),
     ).fetchone()
-    top_category = top_row["category"] if top_row else None
+    top_category = row["category"] if row else None
 
     recent = db.execute(
         "SELECT amount, category, date, description FROM expenses "
