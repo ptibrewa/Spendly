@@ -84,6 +84,56 @@ def seed_db():
     db.commit()
 
 
+# Static WHERE fragment used by the scoped-query helpers below.
+# Safe to concatenate — never assemble WHERE fragments from user input.
+_SCOPE_CLAUSE = "AND date BETWEEN ? AND ?"
+
+
+def _scope(from_iso, to_iso):
+    if from_iso and to_iso:
+        return _SCOPE_CLAUSE, (from_iso, to_iso)
+    return "", ()
+
+
+def count_expenses(user_id, from_iso=None, to_iso=None):
+    clause, extra = _scope(from_iso, to_iso)
+    (n,) = get_db().execute(
+        f"SELECT COUNT(*) FROM expenses WHERE user_id = ? {clause}",
+        (user_id,) + extra,
+    ).fetchone()
+    return n
+
+
+def sum_expenses(user_id, from_iso=None, to_iso=None):
+    clause, extra = _scope(from_iso, to_iso)
+    row = get_db().execute(
+        f"SELECT COALESCE(SUM(amount), 0) AS total FROM expenses "
+        f"WHERE user_id = ? {clause}",
+        (user_id,) + extra,
+    ).fetchone()
+    return float(row["total"])
+
+
+def top_category_for(user_id, from_iso=None, to_iso=None):
+    clause, extra = _scope(from_iso, to_iso)
+    row = get_db().execute(
+        f"SELECT category FROM expenses WHERE user_id = ? {clause} "
+        f"GROUP BY category ORDER BY SUM(amount) DESC LIMIT 1",
+        (user_id,) + extra,
+    ).fetchone()
+    return row["category"] if row else None
+
+
+def recent_expenses(user_id, from_iso=None, to_iso=None, limit=5):
+    clause, extra = _scope(from_iso, to_iso)
+    return get_db().execute(
+        f"SELECT amount, category, date, description FROM expenses "
+        f"WHERE user_id = ? {clause} "
+        f"ORDER BY date DESC, id DESC LIMIT ?",
+        (user_id,) + extra + (limit,),
+    ).fetchall()
+
+
 def seed_user_expenses(user_id):
     db = get_db()
 

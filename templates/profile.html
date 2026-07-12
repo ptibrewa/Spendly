@@ -9,6 +9,31 @@
             <p class="profile-subtitle">Your Spendly account at a glance.</p>
         </header>
 
+        <form class="profile-filter" method="get" action="{{ url_for('profile') }}"
+              data-range-toggle>
+            <label class="filter-label" for="filter-range">Show</label>
+            <select id="filter-range" name="range" data-range-select>
+                <option value="all"        {% if date_filter.range == 'all'        %}selected{% endif %}>All time</option>
+                <option value="this_month" {% if date_filter.range == 'this_month' %}selected{% endif %}>This month</option>
+                <option value="last_30"    {% if date_filter.range == 'last_30'    %}selected{% endif %}>Last 30 days</option>
+                <option value="last_90"    {% if date_filter.range == 'last_90'    %}selected{% endif %}>Last 90 days</option>
+                <option value="ytd"        {% if date_filter.range == 'ytd'        %}selected{% endif %}>Year to date</option>
+                <option value="custom"     {% if date_filter.range == 'custom'     %}selected{% endif %}>Custom range</option>
+            </select>
+
+            <div class="filter-custom" data-range-custom
+                 {% if date_filter.range != 'custom' %}hidden{% endif %}>
+                <label class="filter-label" for="filter-from">From</label>
+                <input id="filter-from" type="date" name="from"
+                       value="{{ date_filter.from_iso or '' }}">
+                <label class="filter-label" for="filter-to">To</label>
+                <input id="filter-to" type="date" name="to"
+                       value="{{ date_filter.to_iso or '' }}">
+            </div>
+
+            <button type="submit" class="btn-primary">Apply</button>
+        </form>
+
         <article class="profile-card">
             <div class="profile-avatar" aria-hidden="true">{{ user.name[0]|upper }}</div>
             <dl class="profile-details">
@@ -41,6 +66,14 @@
                 <span class="stat-value">{{ stats.top_category or '—' }}</span>
             </div>
         </section>
+
+        <p class="filter-status" aria-live="polite">
+            {% if date_filter.range == 'all' %}
+                Showing all time.
+            {% else %}
+                Showing {{ date_filter.from_iso | humandate }} – {{ date_filter.to_iso | humandate }}.
+            {% endif %}
+        </p>
 
         <section class="profile-recent" aria-label="Recent activity">
             <h2 class="recent-heading">Recent activity</h2>

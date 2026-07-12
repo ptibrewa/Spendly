@@ -31,3 +31,23 @@
         }
     });
 })();
+
+(function initRangeToggle() {
+    const form = document.querySelector('[data-range-toggle]');
+    if (!form) return;
+
+    const select = form.querySelector('[data-range-select]');
+    const custom = form.querySelector('[data-range-custom]');
+    if (!select || !custom) return;
+
+    function sync() {
+        if (select.value === 'custom') {
+            custom.removeAttribute('hidden');
+        } else {
+            custom.setAttribute('hidden', '');
+        }
+    }
+
+    select.addEventListener('change', sync);
+    sync();
+})();
