@@ -6,6 +6,8 @@ from werkzeug.security import generate_password_hash
 
 DATABASE = "expense_tracker.db"
 
+CATEGORIES = ("Food", "Transport", "Bills", "Health", "Entertainment", "Shopping", "Other")
+
 
 def get_db():
     if "db" not in g:
@@ -132,6 +134,17 @@ def recent_expenses(user_id, from_iso=None, to_iso=None, limit=5):
         f"ORDER BY date DESC, id DESC LIMIT ?",
         (user_id,) + extra + (limit,),
     ).fetchall()
+
+
+def insert_expense(user_id, amount, category, date, description):
+    db = get_db()
+    cursor = db.execute(
+        "INSERT INTO expenses (user_id, amount, category, date, description) "
+        "VALUES (?, ?, ?, ?, ?)",
+        (user_id, amount, category, date, description),
+    )
+    db.commit()
+    return cursor.lastrowid
 
 
 def seed_user_expenses(user_id):
