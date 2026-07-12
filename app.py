@@ -7,9 +7,11 @@ from flask import Flask, flash, redirect, render_template, request, session, url
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from database.db import (
+    CATEGORIES,
     count_expenses,
     get_db,
     init_db,
+    insert_expense,
     recent_expenses,
     seed_db,
     seed_user_expenses,
@@ -19,6 +21,8 @@ from database.db import (
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SPENDLY_SECRET_KEY", "dev-only-change-me")
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+app.config["SESSION_COOKIE_HTTPONLY"] = True
 
 with app.app_context():
     init_db()
@@ -237,6 +241,8 @@ def profile():
         stats=stats,
         recent=recent,
         date_filter=date_filter,
+        categories=CATEGORIES,
+        today=date.today().isoformat(),
     )
 
 
@@ -248,9 +254,74 @@ def analytics():
     return render_template("analytics.html")
 
 
-@app.route("/expenses/add")
+@app.route("/expenses/add", methods=["GET", "POST"])
 def add_expense():
-    return "Add expense — coming in Step 7"
+    if not session.get("user_id"):
+        flash("Please sign in to add an expense.", "error")
+        return redirect(url_for("login"))
+
+    today_iso = date.today().isoformat()
+
+    if request.method == "GET":
+        return render_template(
+            "add_expense.html",
+            categories=CATEGORIES,
+            today=today_iso,
+        )
+
+    raw_amount = (request.form.get("amount") or "").strip()
+    category = (request.form.get("category") or "").strip()
+    raw_date = (request.form.get("date") or "").strip()
+    description = (request.form.get("description") or "").strip()
+
+    error = None
+    amount = None
+    date_iso = None
+
+    try:
+        amount = float(raw_amount)
+        if amount <= 0 or amount > 1_000_000:
+            error = "Enter a valid amount."
+    except ValueError:
+        error = "Enter a valid amount."
+
+    if not error and category not in CATEGORIES:
+        error = "Choose a category."
+
+    if not error:
+        try:
+            parsed = datetime.strptime(raw_date, "%Y-%m-%d").date()
+            if parsed > date.today():
+                error = "Enter a valid date."
+            else:
+                date_iso = parsed.isoformat()
+        except ValueError:
+            error = "Enter a valid date."
+
+    if not error and len(description) > 500:
+        error = "Description is too long."
+
+    if error:
+        return render_template(
+            "add_expense.html",
+            categories=CATEGORIES,
+            today=today_iso,
+            error=error,
+            amount=raw_amount,
+            category=category,
+            date=raw_date,
+            description=description,
+        )
+
+    insert_expense(
+        session["user_id"],
+        amount,
+        category,
+        date_iso,
+        description or None,
+    )
+    flash("Expense added.", "success")
+    return redirect(url_for("profile"))
 
 
 @app.route("/expenses/<int:id>/edit")

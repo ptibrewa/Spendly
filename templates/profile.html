@@ -75,6 +75,39 @@
             {% endif %}
         </p>
 
+        <section class="profile-add" aria-label="Add expense">
+            <h2 class="recent-heading">Add an expense</h2>
+            <form class="add-expense-form" method="POST" action="{{ url_for('add_expense') }}">
+                <div class="form-group">
+                    <label for="add-amount">Amount</label>
+                    <input type="number" id="add-amount" name="amount"
+                           class="form-input" placeholder="0.00"
+                           step="0.01" min="0.01" max="1000000" required>
+                </div>
+                <div class="form-group">
+                    <label for="add-category">Category</label>
+                    <select id="add-category" name="category" class="form-input" required>
+                        <option value="" disabled selected>Choose a category</option>
+                        {% for c in categories %}
+                        <option value="{{ c }}">{{ c }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="add-date">Date</label>
+                    <input type="date" id="add-date" name="date"
+                           class="form-input" value="{{ today }}" max="{{ today }}" required>
+                </div>
+                <div class="form-group">
+                    <label for="add-description">Description (optional)</label>
+                    <input type="text" id="add-description" name="description"
+                           class="form-input" maxlength="500"
+                           placeholder="What was this for?">
+                </div>
+                <button type="submit" class="btn-primary">Add expense</button>
+            </form>
+        </section>
+
         <section class="profile-recent" aria-label="Recent activity">
             <h2 class="recent-heading">Recent activity</h2>
             {% if recent %}
