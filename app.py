@@ -1,11 +1,21 @@
 import os
 import re
 import sqlite3
+from datetime import date, datetime, timedelta
 
 from flask import Flask, flash, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from database.db import get_db, init_db, seed_db, seed_user_expenses
+from database.db import (
+    count_expenses,
+    get_db,
+    init_db,
+    recent_expenses,
+    seed_db,
+    seed_user_expenses,
+    sum_expenses,
+    top_category_for,
+)
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SPENDLY_SECRET_KEY", "dev-only-change-me")
@@ -17,13 +27,57 @@ with app.app_context():
 
 @app.template_filter("humandate")
 def humandate(value):
-    from datetime import datetime
     for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d"):
         try:
             return datetime.strptime(value, fmt).strftime("%B %-d, %Y")
         except ValueError:
             continue
     return value
+
+
+VALID_RANGES = {"all", "this_month", "last_30", "last_90", "ytd", "custom"}
+
+
+def _parse_iso(value):
+    return datetime.strptime(value, "%Y-%m-%d").date()
+
+
+def resolve_date_range(range_key, raw_from, raw_to):
+    today = date.today()
+
+    if range_key not in VALID_RANGES:
+        range_key = "all"
+
+    if range_key == "all":
+        return None, None, "all", None
+
+    if range_key == "this_month":
+        start = today.replace(day=1)
+        return start.isoformat(), today.isoformat(), "this_month", None
+
+    if range_key == "last_30":
+        start = today - timedelta(days=29)
+        return start.isoformat(), today.isoformat(), "last_30", None
+
+    if range_key == "last_90":
+        start = today - timedelta(days=89)
+        return start.isoformat(), today.isoformat(), "last_90", None
+
+    if range_key == "ytd":
+        start = today.replace(month=1, day=1)
+        return start.isoformat(), today.isoformat(), "ytd", None
+
+    # range_key == "custom"
+    try:
+        start = _parse_iso(raw_from or "")
+        end = _parse_iso(raw_to or "")
+    except ValueError:
+        return None, None, "all", "Invalid date range — showing all expenses."
+
+    if start > end:
+        return None, None, "all", "Invalid date range — showing all expenses."
+
+    return start.isoformat(), end.isoformat(), "custom", None
 
 
 # ------------------------------------------------------------------ #
@@ -148,43 +202,42 @@ def profile():
         flash("Your session has ended. Please sign in again.", "error")
         return redirect(url_for("login"))
 
-    (expense_count,) = db.execute(
+    (lifetime_count,) = db.execute(
         "SELECT COUNT(*) FROM expenses WHERE user_id = ?",
         (user["id"],),
     ).fetchone()
 
-    if expense_count == 0:
+    if lifetime_count == 0:
         seed_user_expenses(user["id"])
-        (expense_count,) = db.execute(
-            "SELECT COUNT(*) FROM expenses WHERE user_id = ?",
-            (user["id"],),
-        ).fetchone()
 
-    row = db.execute(
-        "SELECT COALESCE(SUM(amount), 0) AS total FROM expenses WHERE user_id = ?",
-        (user["id"],),
-    ).fetchone()
-    total_spent = float(row["total"])
-
-    row = db.execute(
-        "SELECT category FROM expenses WHERE user_id = ? "
-        "GROUP BY category ORDER BY SUM(amount) DESC LIMIT 1",
-        (user["id"],),
-    ).fetchone()
-    top_category = row["category"] if row else None
-
-    recent = db.execute(
-        "SELECT amount, category, date, description FROM expenses "
-        "WHERE user_id = ? ORDER BY date DESC, id DESC LIMIT 5",
-        (user["id"],),
-    ).fetchall()
+    from_iso, to_iso, resolved_range, range_error = resolve_date_range(
+        request.args.get("range", "all"),
+        request.args.get("from"),
+        request.args.get("to"),
+    )
+    if range_error:
+        flash(range_error, "error")
 
     stats = {
-        "total_spent": total_spent,
-        "expense_count": expense_count,
-        "top_category": top_category,
+        "total_spent": sum_expenses(user["id"], from_iso, to_iso),
+        "expense_count": count_expenses(user["id"], from_iso, to_iso),
+        "top_category": top_category_for(user["id"], from_iso, to_iso),
     }
-    return render_template("profile.html", user=user, stats=stats, recent=recent)
+    recent = recent_expenses(user["id"], from_iso, to_iso)
+
+    date_filter = {
+        "range": resolved_range,
+        "from_iso": from_iso,
+        "to_iso": to_iso,
+    }
+
+    return render_template(
+        "profile.html",
+        user=user,
+        stats=stats,
+        recent=recent,
+        date_filter=date_filter,
+    )
 
 
 @app.route("/expenses/add")
